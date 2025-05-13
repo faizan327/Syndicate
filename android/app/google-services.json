@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "692954375714",
+    "firebase_url": "https://application-syndicate-dbdd7-default-rtdb.firebaseio.com",
+    "project_id": "application-syndicate-dbdd7",
+    "storage_bucket": "application-syndicate-dbdd7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692954375714:android:d78aed56efcce5ec510c7b",
+        "android_client_info": {
+          "package_name": "com.example.syndicate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnETTIonwOoH3kEggEzRALM8kb-v0WY48"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692954375714:android:5ea85f55ecf85281510c7b",
+        "android_client_info": {
+          "package_name": "com.syndicatecrop.syndicate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnETTIonwOoH3kEggEzRALM8kb-v0WY48"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

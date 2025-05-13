@@ -1,0 +1,36 @@
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+admin.initializeApp();
+
+exports.createUser = functions.https.onCall(async (data, context) => {
+  // Check if the caller is an admin
+  if (!context.auth || context.auth.token.role !== 'admin') {
+    throw new functions.https.HttpsError('permission-denied', 'Only admins can create users.');
+  }
+
+  const { email, password, username, bio, profile, role } = data;
+
+  try {
+    // Create the user
+    const userRecord = await admin.auth().createUser({
+      email: email,
+      password: password,
+    });
+
+    // Add user data to Firestore
+    await admin.firestore().collection('users').doc(userRecord.uid).set({
+      email: email,
+      username: username,
+      bio: bio,
+      profile: profile || 'https://firebasestorage.googleapis.com/v0/b/instagram-8a227.appspot.com/o/person.png?alt=media&token=c6fcbe9d-f502-4aa1-8b4b-ec37339e78ab',
+      role: role || 'user',
+      followers: [],
+      following: [],
+      isSuspended: false,
+    });
+
+    return { success: true, uid: userRecord.uid };
+  } catch (error) {
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});

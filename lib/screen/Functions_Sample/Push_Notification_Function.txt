@@ -1,0 +1,67 @@
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
+
+initializeApp();
+
+exports.sendNotification = onDocumentCreated(
+  "notifications/{userId}/userNotifications/{notificationId}",
+  async (event) => {
+    const notificationData = event.data.data(); // Data from the created notification document
+    const userId = event.params.userId; // Recipient user ID
+    const notificationId = event.params.notificationId; // Notification document ID
+
+    // Fetch the user's FCM token
+    const db = getFirestore();
+    const userDoc = await db.collection("users").doc(userId).get();
+    const fcmToken = userDoc.data().fcmToken;
+
+    if (!fcmToken) {
+      console.log("No FCM token for user:", userId);
+      return null;
+    }
+
+    // Extract all relevant fields from the notification document
+    const actionType = notificationData.actionType || "default";
+    const chatId = notificationData.chatId || "";
+    const senderId = notificationData.senderId || "";
+    const senderUsername = notificationData.senderUsername || "Unknown";
+    const senderProfile = notificationData.senderProfile || "";
+    const messageId = notificationData.messageId || "";
+    const titleEn = notificationData.title_en || "New Notification"; // English title with fallback
+    const titleFr = notificationData.title_fr || "Nouvelle Notification"; // French title with fallback
+    const body = notificationData.body || "Tap to view details";
+
+    // Construct the FCM message with complete data
+    const message = {
+      notification: {
+        title: titleEn, // Use English as the default for the system tray (can be overridden by app)
+        body: body,
+      },
+      data: {
+        actionType: actionType,
+        chatId: chatId,
+        senderId: senderId,
+        senderUsername: senderUsername,
+        senderProfile: senderProfile,
+        messageId: messageId,
+        notificationId: notificationId,
+        title_en: titleEn, // Include English title in data
+        title_fr: titleFr, // Include French title in data
+      },
+      token: fcmToken,
+    };
+
+    // Send the FCM message
+    try {
+      const messaging = getMessaging();
+      await messaging.send(message);
+      console.log("Successfully sent notification:", message);
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
+
+    return null;
+  }
+);

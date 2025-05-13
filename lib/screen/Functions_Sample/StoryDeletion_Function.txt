@@ -1,0 +1,65 @@
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getStorage } = require("firebase-admin/storage");
+
+initializeApp();
+
+exports.deleteExpiredStories = onSchedule("every 12 hours", async (event) => {
+  const db = getFirestore();
+  const storage = getStorage().bucket();
+  const now = new Date();
+
+  const collections = ["stories", "AdminStories"];
+
+  for (const collectionName of collections) {
+    try {
+      const expiredStoriesSnapshot = await db
+        .collection(collectionName)
+        .where("expiryTime", "<=", now)
+        .get();
+
+      if (expiredStoriesSnapshot.empty) {
+        console.log(`No expired stories found in ${collectionName}`);
+        continue;
+      }
+
+      const deletePromises = expiredStoriesSnapshot.docs.map(async (doc) => {
+        const storyData = doc.data();
+        const storyId = doc.id;
+        const mediaUrl = storyData.mediaUrl;
+
+        // Step 1: Delete the story document from Firestore
+        await doc.ref.delete();
+        console.log(`Deleted expired story ${storyId} from ${collectionName}`);
+
+        // Step 2: Check if mediaUrl is in the Stories/ folder before deleting
+        if (mediaUrl) {
+          try {
+            const filePath = mediaUrl.split("/o/")[1]?.split("?")[0];
+            if (filePath) {
+              const decodedPath = decodeURIComponent(filePath);
+
+              // Only delete if the path starts with "Stories/"
+              if (decodedPath.startsWith("stories/")) {
+                await storage.file(decodedPath).delete();
+                console.log(`Deleted media for story ${storyId}: ${mediaUrl}`);
+              } else {
+                console.log(`Skipped deletion of non-Stories media: ${mediaUrl}`);
+              }
+            }
+          } catch (storageError) {
+            console.error(`Error deleting media for story ${storyId}:`, storageError);
+          }
+        }
+      });
+
+      await Promise.all(deletePromises);
+      console.log(`Finished processing expired stories in ${collectionName}`);
+    } catch (error) {
+      console.error(`Error processing ${collectionName}:`, error);
+    }
+  }
+
+  return null;
+});
